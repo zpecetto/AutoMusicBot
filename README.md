@@ -29,3 +29,35 @@ Le script de téléchargement fait appel à `yt-dlp`. Assurez-vous qu'il est ins
 ```bash
 sudo curl -L [https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp](https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp) -o /usr/local/bin/yt-dlp
 sudo chmod a+rx /usr/local/bin/yt-dlp
+```
+2. Préparation des fichiers
+Clonez ce dépôt. Avant de lancer Docker, rendez le script de téléchargement exécutable :
+
+```Bash
+chmod +x download_music.sh
+```
+3. Lancement de l'infrastructure
+Lancez les conteneurs. Le fichier docker-compose.yml créera automatiquement un dossier Musique à la racine de votre projet pour y faire transiter les fichiers MP3 de manière sécurisée.
+
+```Bash
+docker-compose up -d
+```
+4. Configuration dans n8n
+Accédez à votre interface n8n.
+
+Importez le workflow Musique.json (Le moteur de téléchargement).
+
+Importez le workflow Conseille Musique.json (Le cerveau IA).
+
+Dans le workflow Musique, double-cliquez sur le premier nœud YouTube et insérez l'ID de votre playlist à la place de VOTRE_ID_PLAYLIST_ICI.
+
+⚠️ 5. Configuration OAuth2 (Google & YouTube)
+Pour que n8n puisse lire votre playlist et uploader sur votre Drive, vous devez créer des identifiants (Credentials) Google OAuth2.
+
+Attention si vous utilisez un tunnel (ex: Ngrok) :
+
+Lors de la création de l'application sur Google Cloud Console, veillez à ce que l'URI de redirection ne comporte qu'une seule terminaison /rest/oauth2-credential/callback (Exemple: https://votre-url-ngrok.com/rest/oauth2-credential/callback).
+
+Pour vous connecter dans n8n : Assurez-vous d'ouvrir n8n dans votre navigateur en utilisant strictement votre URL Ngrok (et non l'IP locale 192.168... ou localhost) au moment de cliquer sur "Sign in with Google", sinon vous obtiendrez une erreur 400: redirect_uri_mismatch ou Unauthorized.
+
+Projet propulsé par n8n, yt-dlp et l'open-source. Créé pour l'auto-hébergement.
