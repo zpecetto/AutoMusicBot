@@ -1,0 +1,521 @@
+{
+  "name": "Musique",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "playlistItem",
+        "operation": "getAll",
+        "playlistId": "",
+        "returnAll": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        -1216,
+        -144
+      ],
+      "id": "",
+      "name": "Youtube",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.file_path }}",
+        "options": {
+          "dataPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -320,
+        -48
+      ],
+      "id": "d187c6c7-2884-4604-97d0-64229483eaad",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "=✅ Voilà tes {{ $('Youtube').all().length }} musiques ! Elles sont toutes disponibles sur ton Google Drive. 🎵",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        -240
+      ],
+      "id": "98c4d7be-dd79-4605-ab11-426a48a28fbf",
+      "name": "Discord",
+      "webhookId": "cfaa447a-a84b-42e1-8635-d80e394bbe24",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "gV7gDrI0yHvOTr50",
+          "name": "Discord Webhook account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => {\n  const stdout = item.json.stdout || \"\";\n  const match = stdout.match(/\\[ExtractAudio\\] Destination: .+\\/(.+\\.mp3)/);\n  return {\n    json: {\n      // On ne donne que le NOM du fichier, n8n le cherchera dans son dossier autorisé\n      file_path: match ? `/home/node/.n8n-files/${match[1]}` : null\n    }\n  };\n}).filter(item => item.json.file_path !== null);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        -48
+      ],
+      "id": "c8fc9c1a-7a17-4336-9fb7-6ec6667ecf8f",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "name": "={{ $binary.data.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list",
+          "cachedResultName": "My Drive",
+          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "",
+          "mode": "list",
+          "cachedResultName": "Nouvelle Musique",
+          "cachedResultUrl": ""
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -96,
+        -48
+      ],
+      "id": "da7341ec-a0f6-4dcc-bdd6-d12bec600956",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Z9mxjy4iPvZIC3eW",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        -240
+      ],
+      "id": "60a08d34-0685-49d0-a8f4-31c4e92081b8",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "url": "[Tunnel ngrok]",
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1664,
+        64
+      ],
+      "id": "3ef6a6ff-d2e4-4643-8b4e-036f827aa24a",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "1a2a4c61-13af-4bbf-a05d-016b7b170b7b",
+              "leftValue": "={{ $json.statusCode }}",
+              "rightValue": 200,
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -1440,
+        64
+      ],
+      "id": "6a1a0343-95de-40d2-9279-20e38ba272cc",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1888,
+        144
+      ],
+      "id": "8cbbbd55-c34e-4335-a84a-391b9ea00df3",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "command": "=pkill ngrok; sleep 2; nohup ngrok http 5678 > /dev/null 2>&1 &"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -1216,
+        64
+      ],
+      "id": "758428a9-530b-4a28-8bc5-e64096888e34",
+      "name": "Restauration Tunnel",
+      "credentials": {
+        "sshPassword": {
+          "id": "x1pnx99dvjCc6L5G",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -992,
+        208
+      ],
+      "id": "e2235c0e-af07-436c-9894-0d60202ba3f9",
+      "name": "Wait",
+      "webhookId": "855308b2-3ca9-4919-b5f5-93254ff00908"
+    },
+    {
+      "parameters": {
+        "command": "=bash /home/thrawn/download_music.sh \"{{ $json.contentDetails.videoId }}\""
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        -48
+      ],
+      "id": "dc9c1b9a-54a9-4a59-9362-21a0632fb0bd",
+      "name": "Téléchargement Musique",
+      "credentials": {
+        "sshPassword": {
+          "id": "x1pnx99dvjCc6L5G",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "playlistItem",
+        "operation": "delete",
+        "playlistItemId": "={{ $item(0).$node[\"Loop Over Items1\"].json.id }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        144,
+        48
+      ],
+      "id": "eb9f2bae-c4fa-4927-b31c-4a594206dffc",
+      "name": "Delete a playlist item",
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "3SbUfKrBSFSg2JKa",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -992,
+        -144
+      ],
+      "id": "0bf8db30-323f-4b67-a2fc-63c750bcdca6",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "command": "=pkill ngrok"
+      },
+      "type": "n8n-nodes-base.ssh",
+      "typeVersion": 1,
+      "position": [
+        -320,
+        -240
+      ],
+      "id": "575bb37d-5989-4a22-8f59-70d627ce2884",
+      "name": "Éteindre Tunnel",
+      "credentials": {
+        "sshPassword": {
+          "id": "x1pnx99dvjCc6L5G",
+          "name": "SSH Password account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtHour": 17
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -2112,
+        144
+      ],
+      "id": "6a2a1259-7ec7-40e3-95bf-269ff7e28e18",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Youtube": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Delete a playlist item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discord": {
+      "main": [
+        [
+          {
+            "node": "Éteindre Tunnel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Youtube",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Restauration Tunnel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restauration Tunnel": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Téléchargement Musique": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Téléchargement Musique",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete a playlist item": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "1df2b06e-3522-4643-9394-b09710aa068b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "196c70622468c4e89b9a635be78d21686bf811d1d4c3ee0dff380d732d8d61fa"
+  },
+  "id": "BVwlpEkMF4IfrVWg",
+  "tags": []
+}

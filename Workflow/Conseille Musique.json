@@ -1,0 +1,179 @@
+{
+  "name": "Conseille Musique",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "Tu es un expert musical. Tu as deux rôles :\n\nPour écouter ce qu'il a déjà : Utilise l'outil 'liste_musiques' (avec ou sans le paramètre 'recherche') pour lui proposer des titres de sa bibliothèque.\n\nPour recommander de NOUVELLES musiques : Utilise ta propre culture musicale. Cependant, tu dois IMPÉRATIVEMENT faire une auto-vérification avant de répondre :\n\nÉtape A : Pense à un artiste ou un morceau que tu veux recommander.\n\nÉtape B : Utilise l'outil 'liste_musiques' en mettant le nom de ce morceau/artiste dans le paramètre 'recherche' pour vérifier s'il l'a déjà.\n\nÉtape C : Si l'outil trouve la musique, c'est qu'il l'a déjà. Trouve une autre idée et recommence la vérification.\n\nÉtape D : Si l'outil te répond 'Aucune musique trouvée', bingo ! Tu peux lui recommander ce morceau en lui précisant qu'il s'agit d'une nouveauté à découvrir."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        16,
+        -16
+      ],
+      "id": "99abc352-44ac-438e-8ff3-460d80f4f9b3",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "qwen2.5:7b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        208
+      ],
+      "id": "0404abc9-d096-4726-b5c9-50915cd4385f",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "RvwibvBQtNpHngqc",
+          "name": "Ollama account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        96,
+        208
+      ],
+      "id": "ae9fa46e-3a13-42d1-b3a6-d35fd707e128",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "availableInChat": true,
+        "agentIcon": {
+          "type": "icon",
+          "value": "check-check"
+        },
+        "agentName": "Musique",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -272,
+        -16
+      ],
+      "id": "5c1427b1-f012-4911-9440-d09148eafc8b",
+      "name": "When chat message received",
+      "webhookId": "80b53dac-d9f9-4dca-b62d-1668890c4959"
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        416,
+        -16
+      ],
+      "id": "96c5bd61-84c3-455d-b06d-8001d3974ffa",
+      "name": "Discord",
+      "webhookId": "f5770818-cd90-4653-b890-1514906162f8",
+      "credentials": {
+        "discordWebhookApi": {
+          "id": "5dWQRRlKyZtJGahK",
+          "name": "Discord Webhook account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const fs = require('fs');\nconst path = require('path');\n\nconst ROOT = '/home/node/.n8n-files';\nconst AUDIO_EXT = new Set(['.mp3', '.flac', '.m4a', '.aac', '.ogg', '.opus', '.wav', '.wma', '.aiff', '.alac']);\n\n// 🔄 MODIFICATION ICI : On capte directement la variable \"recherche\" créée par le schéma n8n\nlet searchTerm = \"\";\nif (typeof recherche !== 'undefined' && recherche) {\n  searchTerm = String(recherche).toLowerCase();\n} else if (typeof query !== 'undefined' && query) {\n  searchTerm = typeof query === 'string' ? query.toLowerCase() : (query.recherche ? query.recherche.toLowerCase() : \"\");\n}\n\ntry {\n  function walk(dir) {\n    let results = [];\n    const entries = fs.readdirSync(dir, { withFileTypes: true });\n    \n    for (const entry of entries) {\n      const fullPath = path.join(dir, entry.name);\n      if (entry.name.startsWith('.')) continue;\n\n      if (entry.isDirectory()) {\n        results = results.concat(walk(fullPath));\n      } else {\n        const ext = path.extname(entry.name).toLowerCase();\n        if (AUDIO_EXT.has(ext)) {\n          results.push(entry.name);\n        }\n      }\n    }\n    return results;\n  }\n\n  const toutesLesMusiques = walk(ROOT);\n\n  if (toutesLesMusiques.length === 0) {\n    return \"Aucune musique trouvée dans la bibliothèque.\";\n  }\n\n  // Si l'IA cherche quelque chose (ex: \"rock\"), on filtre la liste\n  let musiquesFiltrees = toutesLesMusiques;\n  if (searchTerm) {\n    musiquesFiltrees = toutesLesMusiques.filter(file => file.toLowerCase().includes(searchTerm));\n  }\n\n  if (musiquesFiltrees.length === 0) {\n    return `Aucune musique trouvée pour la recherche \"${searchTerm}\". Demande à l'utilisateur un autre style.`;\n  }\n\n  // On limite toujours à 50 résultats maximum pour protéger la RAM\n  const echantillon = musiquesFiltrees.sort(() => 0.5 - Math.random()).slice(0, 50);\n  \n  const listeFormatee = echantillon.map(file => {\n     const nameWithoutExt = file.replace(/\\.[^/.]+$/, \"\");\n     return `- ${nameWithoutExt}`;\n  });\n\n  if (searchTerm) {\n    return `J'ai trouvé ${musiquesFiltrees.length} musiques contenant \"${searchTerm}\". Voici une sélection :\\n\\n${listeFormatee.join('\\n')}`;\n  } else {\n    return `Tu as un total de ${toutesLesMusiques.length} musiques. Voici 50 titres au hasard :\\n\\n${listeFormatee.join('\\n')}`;\n  }\n\n} catch (error) {\n  return `Erreur lors de la lecture du dossier : ${error.message}`;\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolCode",
+      "typeVersion": 1.3,
+      "position": [
+        224,
+        208
+      ],
+      "id": "48d8bc7f-c295-4b2c-aa12-d77413549de3",
+      "name": "liste_musiques"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Discord",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "liste_musiques": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "aa4dcb4e-5cc0-439c-9db1-100be8a48dce",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "196c70622468c4e89b9a635be78d21686bf811d1d4c3ee0dff380d732d8d61fa"
+  },
+  "id": "psfXAUFp46JCpTtl",
+  "tags": []
+}
