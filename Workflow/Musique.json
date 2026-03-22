@@ -224,7 +224,7 @@
     },
     {
       "parameters": {
-        "command": "=bash /home/thrawn/download_music.sh \"{{ $json.contentDetails.videoId }}\""
+        "command": "=bash /home/[utilisateur]/download_music.sh \"https://www.youtube.com/watch?v={{ $json.contentDetails.videoId }}\""
       },
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
