@@ -1,63 +1,55 @@
-# 🎵 AutoMusicBot : Downloader YouTube & Recommandation IA
+# AutoMusicBot
 
-Un système d'automatisation complet géré par **n8n** permettant de télécharger automatiquement des musiques depuis une playlist YouTube, de les sauvegarder sur Google Drive, de nettoyer la playlist, et de se faire conseiller de nouveaux titres par un Agent IA.
+Workflows n8n pour traiter une playlist YouTube, convertir l’audio en MP3 sur l’hôte, envoyer les fichiers sur Google Drive, puis retirer les éléments traités de la playlist. Un second workflow propose des recommandations musicales avec Ollama et un outil Google Drive.
 
-L'architecture a été pensée et optimisée pour tourner en local sur un **Raspberry Pi 5 (16Go RAM)** via Docker.
+## Fichiers
 
-## ✨ Fonctionnalités
+| Fichier | Rôle |
+|---|---|
+| [Musique.json](Workflow/Musique.json) | Partie Playlist extraite d’Ultime, avec le démarrage commun et les boucles, 18 nœuds |
+| [Conseille Musique.json](Workflow/Conseille%20Musique.json) | Version actualisée avec Google Drive Tool et comptage des fichiers audio, 15 nœuds |
+| [download_music.sh](download_music.sh) | Validation de l’identifiant vidéo, cookies facultatifs, Deno, ffmpeg et conversion MP3 |
+| [docker-compose.yml](docker-compose.yml) | Configuration n8n/Ollama issue du compose fourni, avec montage du dossier audio et réglages de durée d’exécution |
 
-* **📥 Téléchargement Automatique (yt-dlp) :** Surveille une playlist YouTube spécifique. Dès qu'une vidéo y est ajoutée, le système utilise un script bash `yt-dlp` pour télécharger l'audio en MP3 haute qualité de manière invisible.
-* **☁️ Sauvegarde Cloud & Nettoyage :** Le fichier MP3 généré est automatiquement uploadé sur votre Google Drive. Une fois la sauvegarde confirmée, la vidéo est supprimée de la playlist YouTube pour garder une file d'attente propre.
-* **🤖 Agent IA Musical (Local) :** Un bibliothécaire musical (LLM) propulsé par Ollama.
-  * Il possède un outil (`liste_musiques`) pour fouiller dans les musiques que vous possédez déjà.
-  * S'il veut vous recommander une nouveauté, il vérifie d'abord silencieusement dans votre base de données que vous ne l'avez pas déjà avant de vous la proposer.
+## Installation
 
-## 🛠️ Stack Technique
+1. Placer ce dépôt dans `~/AutoMusicBot` sur la machine accessible par les credentials SSH de n8n. Si le chemin diffère, adapter **Téléchargement Musique**.
+2. Installer [yt-dlp](https://github.com/yt-dlp/yt-dlp#installation), Deno et ffmpeg sur cette machine. Le script utilise `/usr/local/bin/yt-dlp` par défaut, modifiable avec la variable `YTDLP`.
+3. Exécuter `chmod +x download_music.sh` puis créer le dossier `Musique` à côté du script. n8n doit pouvoir lire les fichiers créés dans ce dossier.
+4. Pour une nouvelle installation, copier `.env.example` vers `.env`, adapter les valeurs et lancer `docker compose up -d`. Si n8n existe déjà, reprendre uniquement les montages et réglages nécessaires.
+5. Vérifier que le dossier de sortie du script et `MUSIC_HOST_DIR` désignent le même dossier sur l’hôte. Il est monté dans n8n sous `/home/node/.n8n-files`.
 
-* **Orchestrateur :** n8n (avec l'exécution de commandes système activée `N8N_COMMAND_EXECUTION_ENABLED=true`).
-* **Moteur de téléchargement :** `yt-dlp` exécuté via un script Bash.
-* **IA Local :** Ollama (LLM) & Langchain Agents.
-* **Infrastucture :** Docker & Docker Compose.
-* **APIs :** YouTube Data API v3 & Google Drive API.
+Les services Browserless, Audible et Watchtower du compose personnel ne sont pas nécessaires à ces deux workflows et ne sont pas inclus dans ce compose dédié. Le volume n8n est créé par défaut ; adapter sa déclaration pour réutiliser un volume existant.
 
----
+## Configuration des workflows
 
-## ⚙️ Installation & Configuration
+1. Importer les deux JSON. Ils sont désactivés et ne contiennent aucun credential personnel.
+2. Dans **Configuration Globale**, remplacer `Playlist_youtube`. Le nœud **Playlist** lit cette valeur.
+3. Sélectionner les credentials YouTube, Google Drive, SSH, Telegram et Ollama dans leurs nœuds respectifs.
+4. Remplacer `YOUR_MUSIC_FOLDER_ID` dans **Upload file** par le dossier de destination. Dans le workflow de conseil, configurer le dossier du catalogue musical dans les deux nœuds Google Drive ; il peut être différent du dossier de destination.
+5. Configurer le destinataire Telegram de la synchronisation. Le conseiller répond au chat reçu par son propre Telegram Trigger.
+6. Adapter le début commun : **Schedule Trigger → Date & Time → Configuration Globale → Loop Over Items4 → HTTP Request1 → If5**. L’URL de contrôle, la restauration ngrok en SSH, **Wait1** et le retour dans la boucle sont conservés.
+7. Le planificateur reprend le vendredi à 17 h. Adapter l’horaire et le fuseau. Le conseiller conserve son déclencheur Telegram et le modèle `llama3.2:latest` de l’export.
+8. Vérifier un téléchargement et un envoi sur Drive avant activation. **Delete a playlist item** est exécuté après **Upload file** et retire l’entrée de la playlist.
 
-### 1. Prérequis sur la machine hôte
-Le script de téléchargement fait appel à `yt-dlp`. Assurez-vous qu'il est installé sur votre machine hôte (ex: Raspberry Pi) au chemin exact `/usr/local/bin/yt-dlp`.
-```bash
-sudo curl -L [https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp](https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp) -o /usr/local/bin/yt-dlp
-sudo chmod a+rx /usr/local/bin/yt-dlp
-```
-2. Préparation des fichiers
-Clonez ce dépôt. Avant de lancer Docker, rendez le script de téléchargement exécutable :
+Le nœud **Éteindre Tunnel** termine la branche musique par `pkill ngrok`, comme dans la source. Désactiver ou adapter ce nœud si d’autres workflows partagent ce tunnel. Ne pas lancer simultanément cette extraction et la branche musique du workflow Ultime sur la même playlist.
 
-```Bash
-chmod +x download_music.sh
-```
-3. Lancement de l'infrastructure
-Lancez les conteneurs. Le fichier docker-compose.yml créera automatiquement un dossier Musique à la racine de votre projet pour y faire transiter les fichiers MP3 de manière sécurisée.
+## Script de téléchargement
 
-```Bash
-docker-compose up -d
-```
-4. Configuration dans n8n
-Accédez à votre interface n8n.
+Les chemins personnels sont remplacés par des valeurs portables :
 
-Importez le workflow Musique.json (Le moteur de téléchargement).
+| Variable | Valeur par défaut |
+|---|---|
+| `YTDLP` | `/usr/local/bin/yt-dlp` |
+| `OUTPUT_DIR` | Dossier `Musique` à côté du script |
+| `COOKIE_FILE` | Fichier `youtube-cookies.txt` à côté du script |
 
-Importez le workflow Conseille Musique.json (Le cerveau IA).
+Le cookie YouTube, s’il est nécessaire, doit être un fichier local au format accepté par yt-dlp et rester privé. Son absence n’empêche pas de traiter les vidéos accessibles sans connexion.
 
-Dans le workflow Musique, double-cliquez sur le premier nœud YouTube et insérez l'ID de votre playlist à la place de VOTRE_ID_PLAYLIST_ICI.
+La sortie `N8N_FILE:` contient le chemin final encodé en JSON, produit par l’option `--print` après conversion. Le nœud Code le traduit en chemin dans le conteneur. Il signale une erreur si le téléchargement échoue ou si aucun MP3 n’est retourné, y compris lors du retraitement d’un fichier existant.
 
-⚠️ 5. Configuration OAuth2 (Google & YouTube)
-Pour que n8n puisse lire votre playlist et uploader sur votre Drive, vous devez créer des identifiants (Credentials) Google OAuth2.
+## Vérification
 
-Attention si vous utilisez un tunnel (ex: Ngrok) :
+Les connexions et références des workflows, le JavaScript, les expressions et la syntaxe Bash sont contrôlés localement. Des tests simulés vérifient le chemin audio et le refus des sorties invalides. Aucun téléchargement, envoi Drive, retrait de playlist ni message Telegram réel n’a été exécuté pendant la préparation.
 
-Lors de la création de l'application sur Google Cloud Console, veillez à ce que l'URI de redirection ne comporte qu'une seule terminaison /rest/oauth2-credential/callback (Exemple: https://votre-url-ngrok.com/rest/oauth2-credential/callback).
-
-Pour vous connecter dans n8n : Assurez-vous d'ouvrir n8n dans votre navigateur en utilisant strictement votre URL Ngrok (et non l'IP locale 192.168... ou localhost) au moment de cliquer sur "Sign in with Google", sinon vous obtiendrez une erreur 400: redirect_uri_mismatch ou Unauthorized.
-
-Projet propulsé par n8n, yt-dlp et l'open-source. Créé pour l'auto-hébergement.
+Les quotas YouTube s’appliquent aux opérations de playlist. Les fichiers et données de catalogue envoyés à Google Drive ou Telegram quittent la machine locale ; seul le modèle Ollama s’exécute localement avec cette configuration.

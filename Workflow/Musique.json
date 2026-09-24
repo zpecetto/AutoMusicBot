@@ -1,131 +1,16 @@
 {
-  "name": "Musique",
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "active": false,
+  "pinData": {},
+  "tags": [],
+  "name": "AutoMusicBot - Playlist",
   "nodes": [
     {
       "parameters": {
-        "resource": "playlistItem",
-        "operation": "getAll",
-        "playlistId": "",
-        "returnAll": true,
-        "options": {}
-      },
-      "type": "n8n-nodes-base.youTube",
-      "typeVersion": 1,
-      "position": [
-        -1216,
-        -144
-      ],
-      "id": "",
-      "name": "Youtube",
-      "credentials": {
-        "youTubeOAuth2Api": {
-          "id": "",
-          "name": "YouTube account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "fileSelector": "={{ $json.file_path }}",
-        "options": {
-          "dataPropertyName": "data"
-        }
-      },
-      "type": "n8n-nodes-base.readWriteFile",
-      "typeVersion": 1.1,
-      "position": [
-        -320,
-        -48
-      ],
-      "id": "d187c6c7-2884-4604-97d0-64229483eaad",
-      "name": "Read/Write Files from Disk"
-    },
-    {
-      "parameters": {
-        "authentication": "webhook",
-        "content": "=✅ Voilà tes {{ $('Youtube').all().length }} musiques ! Elles sont toutes disponibles sur ton Google Drive. 🎵",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.discord",
-      "typeVersion": 2,
-      "position": [
-        -544,
-        -240
-      ],
-      "id": "98c4d7be-dd79-4605-ab11-426a48a28fbf",
-      "name": "Discord",
-      "webhookId": "cfaa447a-a84b-42e1-8635-d80e394bbe24",
-      "credentials": {
-        "discordWebhookApi": {
-          "id": "gV7gDrI0yHvOTr50",
-          "name": "Discord Webhook account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "return items.map(item => {\n  const stdout = item.json.stdout || \"\";\n  const match = stdout.match(/\\[ExtractAudio\\] Destination: .+\\/(.+\\.mp3)/);\n  return {\n    json: {\n      // On ne donne que le NOM du fichier, n8n le cherchera dans son dossier autorisé\n      file_path: match ? `/home/node/.n8n-files/${match[1]}` : null\n    }\n  };\n}).filter(item => item.json.file_path !== null);"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -544,
-        -48
-      ],
-      "id": "c8fc9c1a-7a17-4336-9fb7-6ec6667ecf8f",
-      "name": "Code in JavaScript"
-    },
-    {
-      "parameters": {
-        "name": "={{ $binary.data.fileName }}",
-        "driveId": {
-          "__rl": true,
-          "value": "My Drive",
-          "mode": "list",
-          "cachedResultName": "My Drive",
-          "cachedResultUrl": "https://drive.google.com/drive/my-drive"
-        },
-        "folderId": {
-          "__rl": true,
-          "value": "",
-          "mode": "list",
-          "cachedResultName": "Nouvelle Musique",
-          "cachedResultUrl": ""
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.googleDrive",
-      "typeVersion": 3,
-      "position": [
-        -96,
-        -48
-      ],
-      "id": "da7341ec-a0f6-4dcc-bdd6-d12bec600956",
-      "name": "Upload file",
-      "credentials": {
-        "googleDriveOAuth2Api": {
-          "id": "Z9mxjy4iPvZIC3eW",
-          "name": "Google Drive account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "aggregate": "aggregateAllItemData",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.aggregate",
-      "typeVersion": 1,
-      "position": [
-        -768,
-        -240
-      ],
-      "id": "60a08d34-0685-49d0-a8f4-31c4e92081b8",
-      "name": "Aggregate"
-    },
-    {
-      "parameters": {
-        "url": "[Tunnel ngrok]",
+        "url": "https://YOUR_N8N_HOST.example.invalid/",
         "options": {
           "allowUnauthorizedCerts": true,
           "response": {
@@ -139,11 +24,40 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.4,
       "position": [
-        -1664,
-        64
+        -5328,
+        2112
       ],
-      "id": "3ef6a6ff-d2e4-4643-8b4e-036f827aa24a",
-      "name": "HTTP Request"
+      "id": "9c654b02-941e-5fdb-9620-8d36ec6f2d1a",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "4a1cf3d8-1821-5694-aec3-54e02e71b37f",
+              "name": "jour_de_la_semaine",
+              "value": "={{ $json.jour_de_la_semaine }}",
+              "type": "string"
+            },
+            {
+              "id": "5ee4ccd3-d0f5-5ad2-8d0f-ea5da28cc8ea",
+              "name": "Playlist_youtube",
+              "value": "YOUR_YOUTUBE_PLAYLIST_ID",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -5776,
+        2192
+      ],
+      "id": "64dd4e52-0b86-5d19-b8b2-afa51d228774",
+      "name": "Configuration Globale"
     },
     {
       "parameters": {
@@ -156,7 +70,7 @@
           },
           "conditions": [
             {
-              "id": "1a2a4c61-13af-4bbf-a05d-016b7b170b7b",
+              "id": "dfe26474-e182-5972-9207-d7a85fa59c45",
               "leftValue": "={{ $json.statusCode }}",
               "rightValue": 200,
               "operator": {
@@ -172,24 +86,11 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.3,
       "position": [
-        -1440,
-        64
+        -5104,
+        2112
       ],
-      "id": "6a1a0343-95de-40d2-9279-20e38ba272cc",
-      "name": "If"
-    },
-    {
-      "parameters": {
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [
-        -1888,
-        144
-      ],
-      "id": "8cbbbd55-c34e-4335-a84a-391b9ea00df3",
-      "name": "Loop Over Items"
+      "id": "9d610542-5f87-514c-a9a9-cf28370451ab",
+      "name": "If5"
     },
     {
       "parameters": {
@@ -198,48 +99,157 @@
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
       "position": [
-        -1216,
-        64
+        -4880,
+        2224
       ],
-      "id": "758428a9-530b-4a28-8bc5-e64096888e34",
-      "name": "Restauration Tunnel",
-      "credentials": {
-        "sshPassword": {
-          "id": "x1pnx99dvjCc6L5G",
-          "name": "SSH Password account"
-        }
-      }
+      "id": "170fb1b9-c9f6-5d1c-8de1-3f5a01d0ef7e",
+      "name": "Restauration Tunnel1"
     },
     {
       "parameters": {},
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        -992,
-        208
+        -4688,
+        2368
       ],
-      "id": "e2235c0e-af07-436c-9894-0d60202ba3f9",
-      "name": "Wait",
-      "webhookId": "855308b2-3ca9-4919-b5f5-93254ff00908"
+      "id": "115ffec8-c553-5af0-bf92-2e4b12afa9c0",
+      "name": "Wait1",
+      "webhookId": "2661df4e-cff0-5a14-bbf9-d0b1e75ae190"
     },
     {
       "parameters": {
-        "command": "=bash /home/[utilisateur]/download_music.sh \"https://www.youtube.com/watch?v={{ $json.contentDetails.videoId }}\""
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -5552,
+        2192
+      ],
+      "id": "4ce4ff62-49b7-5b2e-acd4-8b2ec5a737a0",
+      "name": "Loop Over Items4"
+    },
+    {
+      "parameters": {
+        "operation": "formatDate",
+        "date": "={{ $now }}",
+        "format": "custom",
+        "customFormat": "E",
+        "outputFieldName": "jour_de_la_semaine",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        -6000,
+        2192
+      ],
+      "id": "96b4bdaa-4c1c-577f-8556-6ce3de7b2cdd",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                5
+              ],
+              "triggerAtHour": 17
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -6224,
+        2192
+      ],
+      "id": "aca2b9b5-23c2-5f9c-be84-cc2c278e7258",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $json.file_path }}",
+        "options": {
+          "dataPropertyName": "data"
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1.1,
+      "position": [
+        -2688,
+        5200
+      ],
+      "id": "111aff54-944a-5794-a822-c4ae4345ca5c",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "jsCode": "// yt-dlp reports the final path as JSON after conversion or reuse of an existing MP3.\nreturn $input.all().map((item, index) => {\n  const exitCode = Number(item.json.code ?? item.json.exitCode ?? 0);\n  if (exitCode !== 0) throw new Error(`Audio download failed with exit code ${exitCode}.`);\n  const lines = String(item.json.stdout ?? '').split(/\\r?\\n/);\n  const marker = lines.filter(line => line.startsWith('N8N_FILE:')).at(-1);\n  if (!marker) throw new Error('The downloader did not return a final audio path.');\n  let hostPath;\n  try { hostPath = JSON.parse(marker.slice('N8N_FILE:'.length)); }\n  catch { throw new Error('The downloader returned an invalid JSON path.'); }\n  if (typeof hostPath !== 'string') throw new Error('The audio path must be a string.');\n  const filename = hostPath.split('/').at(-1);\n  if (!filename || !/\\.mp3$/i.test(filename)) throw new Error('The final audio file is not an MP3.');\n  return {json: {file_path: `/home/node/.n8n-files/${filename}`}, pairedItem: {item:index}};\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2912,
+        5200
+      ],
+      "id": "0aa666f8-6e08-5108-bc98-2562fa85bf54",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "name": "={{ $binary.data.fileName }}",
+        "driveId": {
+          "__rl": true,
+          "value": "My Drive",
+          "mode": "list"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "YOUR_MUSIC_FOLDER_ID",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -2464,
+        5200
+      ],
+      "id": "7e03881e-4e0b-5128-92b4-72170888fbed",
+      "name": "Upload file"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -3136,
+        5008
+      ],
+      "id": "4af2c6b4-5559-5670-9e57-13eb3447d87f",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "command": "=bash \"$HOME/AutoMusicBot/download_music.sh\" \"{{ $json.contentDetails.videoId }}\""
       },
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
       "position": [
-        -768,
-        -48
+        -3136,
+        5200
       ],
-      "id": "dc9c1b9a-54a9-4a59-9362-21a0632fb0bd",
-      "name": "Téléchargement Musique",
-      "credentials": {
-        "sshPassword": {
-          "id": "x1pnx99dvjCc6L5G",
-          "name": "SSH Password account"
-        }
-      }
+      "id": "46ac1c17-da7c-51d5-babc-f028a60c2cc6",
+      "name": "Téléchargement Musique"
     },
     {
       "parameters": {
@@ -251,17 +261,11 @@
       "type": "n8n-nodes-base.youTube",
       "typeVersion": 1,
       "position": [
-        144,
-        48
+        -2240,
+        5280
       ],
-      "id": "eb9f2bae-c4fa-4927-b31c-4a594206dffc",
-      "name": "Delete a playlist item",
-      "credentials": {
-        "youTubeOAuth2Api": {
-          "id": "3SbUfKrBSFSg2JKa",
-          "name": "YouTube account"
-        }
-      }
+      "id": "69ab0c85-d269-5e35-8eb6-c19e9bd6294b",
+      "name": "Delete a playlist item"
     },
     {
       "parameters": {
@@ -270,10 +274,10 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        -992,
-        -144
+        -3360,
+        5200
       ],
-      "id": "0bf8db30-323f-4b67-a2fc-63c750bcdca6",
+      "id": "c4b4e65f-0057-5f13-aba2-d9b20143a30f",
       "name": "Loop Over Items1"
     },
     {
@@ -283,46 +287,143 @@
       "type": "n8n-nodes-base.ssh",
       "typeVersion": 1,
       "position": [
-        -320,
-        -240
+        -2688,
+        5008
       ],
-      "id": "575bb37d-5989-4a22-8f59-70d627ce2884",
-      "name": "Éteindre Tunnel",
-      "credentials": {
-        "sshPassword": {
-          "id": "x1pnx99dvjCc6L5G",
-          "name": "SSH Password account"
-        }
-      }
+      "id": "ecd3e72e-1e82-5b3d-92a9-c5554e2b0826",
+      "name": "Éteindre Tunnel"
     },
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "weeks",
-              "triggerAtHour": 17
-            }
-          ]
-        }
+        "resource": "playlistItem",
+        "operation": "getAll",
+        "playlistId": "={{ $('Configuration Globale').first().json.Playlist_youtube }}",
+        "returnAll": true,
+        "options": {}
       },
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.3,
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
       "position": [
-        -2112,
-        144
+        -3584,
+        5200
       ],
-      "id": "6a2a1259-7ec7-40e3-95bf-269ff7e28e18",
-      "name": "Schedule Trigger"
+      "id": "8204fed4-d1d8-5e81-bc0b-272d34574e91",
+      "name": "Playlist"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=✅ Voilà tes {{ $('Playlist').all().length }} musiques ! Elles sont toutes disponibles sur ton Google Drive. 🎵",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -2912,
+        5008
+      ],
+      "id": "880a1fff-8124-553e-a766-b872b922cae7",
+      "name": "Send a text message",
+      "webhookId": "6ca61e98-e977-549c-a775-935a6598dda1"
     }
   ],
-  "pinData": {},
   "connections": {
-    "Youtube": {
+    "HTTP Request1": {
       "main": [
         [
           {
-            "node": "Loop Over Items1",
+            "node": "If5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Configuration Globale": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If5": {
+      "main": [
+        [
+          {
+            "node": "Playlist",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Restauration Tunnel1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Restauration Tunnel1": {
+      "main": [
+        [
+          {
+            "node": "Wait1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items4": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "main": [
+        [
+          {
+            "node": "Configuration Globale",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Date & Time",
             "type": "main",
             "index": 0
           }
@@ -366,87 +467,7 @@
       "main": [
         [
           {
-            "node": "Discord",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Discord": {
-      "main": [
-        [
-          {
-            "node": "Éteindre Tunnel",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTTP Request": {
-      "main": [
-        [
-          {
-            "node": "If",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "If": {
-      "main": [
-        [
-          {
-            "node": "Youtube",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Restauration Tunnel",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Loop Over Items": {
-      "main": [
-        [
-          {
-            "node": "HTTP Request",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "HTTP Request",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Restauration Tunnel": {
-      "main": [
-        [
-          {
-            "node": "Wait",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Wait": {
-      "main": [
-        [
-          {
-            "node": "Loop Over Items",
+            "node": "Send a text message",
             "type": "main",
             "index": 0
           }
@@ -493,29 +514,27 @@
         ]
       ]
     },
-    "Schedule Trigger": {
+    "Playlist": {
       "main": [
         [
           {
-            "node": "Loop Over Items",
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a text message": {
+      "main": [
+        [
+          {
+            "node": "Éteindre Tunnel",
             "type": "main",
             "index": 0
           }
         ]
       ]
     }
-  },
-  "active": false,
-  "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": false
-  },
-  "versionId": "1df2b06e-3522-4643-9394-b09710aa068b",
-  "meta": {
-    "templateCredsSetupCompleted": true,
-    "instanceId": "196c70622468c4e89b9a635be78d21686bf811d1d4c3ee0dff380d732d8d61fa"
-  },
-  "id": "BVwlpEkMF4IfrVWg",
-  "tags": []
+  }
 }
